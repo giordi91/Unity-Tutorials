@@ -15,7 +15,7 @@ public class parallelTransport : MonoBehaviour
     public static float4x4 computeFrame(float3 start, float3 end, float3 up, float3 pos)
     {
         //compute an orthonormal frame from two points and an up vector
-        float3 aim = math.normalize(start - end);
+        float3 aim = math.normalize( end-start);
         float3 cross = math.normalize(math.cross(aim, up));
         up = math.normalize(math.cross(cross, aim));
 
@@ -34,13 +34,14 @@ public class parallelTransport : MonoBehaviour
         float rad = math.radians(angle);
         float cosA = math.cos(rad);
         float sinA = math.sin(rad);
-        return math.transpose( new float4x4
+        return math.transpose
+            ( new float4x4
         (
             cosA + axis.x * axis.x * (1.0f - cosA), axis.x * axis.y * (1.0f - cosA) - axis.z * sinA,
             axis.x * axis.z * (1.0f - cosA) + axis.y * sinA, 0,
             axis.y * axis.x * (1.0f - cosA) + axis.z * sinA, cosA + axis.y * axis.y * (1.0f - cosA),
             axis.y * axis.z * (1.0f - cosA) - axis.x * sinA, 0,
-            axis.z * axis.x * (1.0f - cosA) - axis.y * sinA, axis.z * axis.y * (1.0f - cosA) + axis.z * sinA,
+            axis.z * axis.x * (1.0f - cosA) - axis.y * sinA, axis.z * axis.y * (1.0f - cosA) + axis.x * sinA,
             cosA + axis.z * axis.z * (1.0f - cosA), 0,
             0, 0, 0, 1
         ));
@@ -62,25 +63,25 @@ public class parallelTransport : MonoBehaviour
 
 	    float3 up = initialVector;
         //calculate the frames
-	    float twistStep = twistAmount / (float)(objLen - 1);
+	    float twistStep = twistAmount / (float)(objLen - 2);
 	    for (int i = 0; i < objLen-1; ++i)
 	    {
             //computing the orthonormal frame
 	        frames[i] = computeFrame(positions[i], positions[i + 1], up, positions[i]);
             //applying twist
+	        float angleAmount = twistStep * (float) i;
 	        frames[i] = math.mul( getRotationMatrix(frames[i].c0.xyz, twistStep*(float)i) , frames[i]);
             //critical part of parallel transport, the up vector gets updated at every step
 	        up = frames[i].c1.xyz;
 	    }
 
         //draw the frames
-	    var root = transform.localToWorldMatrix;
 	    for (int i = 0; i < objLen-1; ++i)
 	    {
 	        float3 currP = positions[i ];
+            Debug.DrawLine(currP, positions[i + 1]  , Color.red);
             Debug.DrawLine(currP, currP + (frames[i].c1.xyz)*debugVectorScale , Color.green);
             Debug.DrawLine(currP, currP + (frames[i].c2.xyz)*debugVectorScale , Color.blue);
-            Debug.DrawLine(currP, positions[i + 1]  , Color.red);
 	    }
     }
 }
